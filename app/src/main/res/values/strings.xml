@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">RickAndMortyApplication</string>
+    <string name="header">Добро пожаловать!</string>
+    <string name="sub_title">Здесь ты найдёшь персонажей, истории и немного межгалактического абсурда!</string>
+    <string name="auth">Войти</string>
+    <string name="reg">Зарегистрироваться</string>
+    <string name="create_acc">Создайте новый аккаунт</string>
+    <string name="auth_do">Войдите в аккаунт</string>
+    <string name="rick_and_morty">Rick &amp; Morty</string>
+    <string name="out">Выйти</string>
+    <string name="next">Загрузить еще</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
