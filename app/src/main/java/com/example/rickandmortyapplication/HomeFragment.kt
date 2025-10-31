@@ -20,7 +20,7 @@ class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("Non-zero value was expected")
     private val repository = RickAndMortyRepository()
-    private var page = 200
+    private var page = 1
     private val characters = mutableListOf<Character>()
     private lateinit var adapter: CharacterAdapter
 
@@ -54,11 +54,29 @@ class HomeFragment : Fragment() {
                 binding.recyclerView.visibility = View.GONE
 
                 val response = repository.getCharacters(page)
-                if (response?.results.isNullOrEmpty()) {
-                    Toast.makeText(requireContext(), "Данные не найдены", Toast.LENGTH_SHORT).show()
-                } else {
-                    characters.addAll(response!!.results)
-                    adapter.notifyDataSetChanged()
+
+                when {
+                    response.isSuccessful -> {
+                        val body = response.body()
+                        if (body != null) {
+                            characters.addAll(body.results)
+                            binding.recyclerView.adapter?.notifyDataSetChanged()
+                        } else {
+                            Toast.makeText(requireContext(), "Пустой ответ от сервера", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+
+                    response.code() == 404 -> {
+                        Toast.makeText(requireContext(), "Страница не найдена", Toast.LENGTH_SHORT).show()
+                    }
+
+                    response.code() == 500 -> {
+                        Toast.makeText(requireContext(), "Ошибка сервера", Toast.LENGTH_SHORT).show()
+                    }
+
+                    else -> {
+                        Toast.makeText(requireContext(), "Неизвестная ошибка: ${response.code()}", Toast.LENGTH_SHORT).show()
+                    }
                 }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Ошибка загрузки: ${e.localizedMessage}", Toast.LENGTH_LONG).show()

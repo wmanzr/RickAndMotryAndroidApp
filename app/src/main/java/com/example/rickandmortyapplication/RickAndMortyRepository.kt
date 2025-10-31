@@ -3,6 +3,7 @@ package com.example.rickandmortyapplication
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Retrofit
+import retrofit2.Response
 import com.jakewharton.retrofit2.converter.kotlinx.serialization.asConverterFactory
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
@@ -20,12 +21,7 @@ class RickAndMortyRepository {
         api = retrofit.create(RickAndMortyApi::class.java)
     }
 
-    suspend fun getCharacters(page: Int): CharacterResponse? = withContext(Dispatchers.IO) {
-        try {
-            api.getCharacters(page)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
+    suspend fun getCharacters(page: Int): Response<CharacterResponse> = withContext(Dispatchers.IO) {
+        api.getCharacters(page)
     }
 }
