@@ -1,5 +1,6 @@
-package com.example.rickandmortyapplication
+package com.example.rickandmortyapplication.data
 
+import com.example.rickandmortyapplication.model.CharacterResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Retrofit

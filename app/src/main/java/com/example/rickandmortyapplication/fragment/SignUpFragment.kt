@@ -1,4 +1,4 @@
-package com.example.rickandmortyapplication
+package com.example.rickandmortyapplication.fragment
 
 import android.os.Bundle
 import android.util.Patterns
@@ -7,6 +7,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.navigation.findNavController
+import com.example.rickandmortyapplication.data.SQLiteDB
+import com.example.rickandmortyapplication.model.User
 import com.example.rickandmortyapplication.databinding.FragmentSignUpBinding
 import com.google.android.material.snackbar.Snackbar
 

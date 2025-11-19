@@ -1,9 +1,10 @@
-package com.example.rickandmortyapplication
+package com.example.rickandmortyapplication.data
 
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import com.example.rickandmortyapplication.model.User
 
 class SQLiteDB(val context: Context, val factory: SQLiteDatabase.CursorFactory?) :
     SQLiteOpenHelper(context, "rick_and_morty", factory, 1) {

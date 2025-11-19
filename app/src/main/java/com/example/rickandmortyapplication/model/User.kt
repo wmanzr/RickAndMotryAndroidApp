@@ -1,4 +1,4 @@
-package com.example.rickandmortyapplication
+package com.example.rickandmortyapplication.model
 
 import kotlinx.serialization.Serializable
 import java.io.Serializable as JSerializable
