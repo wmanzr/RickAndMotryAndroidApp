@@ -1,4 +1,4 @@
-package com.example.rickandmortyapplication
+package com.example.rickandmortyapplication.fragment
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -7,22 +7,30 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import androidx.recyclerview.widget.GridLayoutManager
+import androidx.navigation.fragment.findNavController
+import com.example.rickandmortyapplication.model.Character
+import com.example.rickandmortyapplication.model.CharacterAdapter
+import com.example.rickandmortyapplication.data.DataStoreManager
+import com.example.rickandmortyapplication.data.RickAndMortyRepository
 import com.example.rickandmortyapplication.databinding.FragmentHomeBinding
-import com.example.rickandmortyapplication.databinding.ItemCharacterBinding
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-
 class HomeFragment : Fragment() {
-
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("Non-zero value was expected")
     private val repository = RickAndMortyRepository()
     private var page = 1
+    private var autoLoadEnabled = false
+    private var displayMode = "list"
     private val characters = mutableListOf<Character>()
     private lateinit var adapter: CharacterAdapter
+    private val autoLoadKey = booleanPreferencesKey("auto_load_pages")
+    private val displayModeKey = stringPreferencesKey("display_mode")
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -34,24 +42,67 @@ class HomeFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
-        adapter = CharacterAdapter(characters)
-        binding.recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        binding.recyclerView.adapter = adapter
-
-        loadCharacters(page)
+        lifecycleScope.launch {
+            loadSettingsAndApply()
+        }
 
         binding.nextPageButton.setOnClickListener {
             page++
             loadCharacters(page)
         }
+
+        binding.buttonSettings.setOnClickListener {
+            val action = HomeFragmentDirections.actionHomeFragmentToSettingsFragment()
+            findNavController().navigate(action)
+        }
+    }
+
+    private suspend fun loadSettingsAndApply() {
+        val dataStore = DataStoreManager.getDataStore(requireContext())
+        val prefs = dataStore.data.first()
+
+        autoLoadEnabled = prefs[autoLoadKey] ?: false
+        displayMode = prefs[displayModeKey] ?: "list"
+
+        adapter = CharacterAdapter(characters)
+
+        binding.recyclerView.layoutManager = when (displayMode) {
+            "grid" -> GridLayoutManager(requireContext(), 2)
+            else -> LinearLayoutManager(requireContext())
+        }
+
+        binding.recyclerView.adapter = adapter
+
+        binding.nextPageButton.visibility = if (autoLoadEnabled) View.GONE else View.VISIBLE
+        if (autoLoadEnabled) {
+            binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+
+                    val layoutManager = recyclerView.layoutManager
+                    val lastVisiblePosition = when (layoutManager) {
+                        is LinearLayoutManager -> layoutManager.findLastVisibleItemPosition()
+                        is GridLayoutManager -> layoutManager.findLastVisibleItemPosition()
+                        else -> return
+                    }
+
+                    if (lastVisiblePosition >= characters.size - 3 && binding.progressBar.visibility != View.VISIBLE) {
+                        page++
+                        loadCharacters(page)
+                    }
+                }
+            })
+        }
+        loadCharacters(page)
     }
 
     private fun loadCharacters(page: Int) {
         lifecycleScope.launch {
             try {
                 binding.progressBar.visibility = View.VISIBLE
-                binding.recyclerView.visibility = View.GONE
+                if (!autoLoadEnabled) {
+                    binding.recyclerView.visibility = View.GONE
+                }
 
                 val response = repository.getCharacters(page)
 
@@ -91,34 +142,5 @@ class HomeFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
-    }
-
-    class CharacterAdapter(
-        private val items: List<Character>
-    ) : RecyclerView.Adapter<CharacterAdapter.CharacterViewHolder>() {
-
-        class CharacterViewHolder(val binding: ItemCharacterBinding) :
-            RecyclerView.ViewHolder(binding.root)
-
-        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CharacterViewHolder {
-            val binding = ItemCharacterBinding.inflate(
-                LayoutInflater.from(parent.context), parent, false
-            )
-            return CharacterViewHolder(binding)
-        }
-
-        override fun onBindViewHolder(holder: CharacterViewHolder, position: Int) {
-            val character = items[position]
-            holder.binding.characterName.text = character.name
-            holder.binding.characterStatus.text = "${character.status} - ${character.species}"
-            holder.binding.characterLocation.text = character.location.name
-
-            Glide.with(holder.binding.root.context)
-                .load(character.image)
-                .transform(RoundedCorners(32))
-                .into(holder.binding.characterImage)
-        }
-
-        override fun getItemCount() = items.size
     }
 }

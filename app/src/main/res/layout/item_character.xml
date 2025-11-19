@@ -4,7 +4,8 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="10dp"
-    android:background="#277ad4"
+    android:background="@android:color/transparent"
+    android:foreground="?attr/selectableItemBackgroundBorderless"
     android:layout_marginBottom="8dp">
 
     <ImageView
