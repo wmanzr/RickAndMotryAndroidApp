@@ -6,7 +6,7 @@
 
     <fragment
         android:id="@+id/onboardFragment"
-        android:name="com.example.rickandmortyapplication.OnboardFragment"
+        android:name="com.example.rickandmortyapplication.fragment.OnboardFragment"
         android:label="Onboard">
         <action
             android:id="@+id/action_onboardFragment_to_signInFragment"
@@ -22,7 +22,7 @@
 
     <fragment
         android:id="@+id/signInFragment"
-        android:name="com.example.rickandmortyapplication.SignInFragment"
+        android:name="com.example.rickandmortyapplication.fragment.SignInFragment"
         android:label="Sign In">
         <action
             android:id="@+id/action_signInFragment_to_homeFragment"
@@ -41,13 +41,13 @@
             app:popUpToInclusive="true" />
         <argument
             android:name="user"
-            app:argType="com.example.rickandmortyapplication.User"
+            app:argType="com.example.rickandmortyapplication.model.User"
             app:nullable="true" />
     </fragment>
 
     <fragment
         android:id="@+id/signUpFragment"
-        android:name="com.example.rickandmortyapplication.SignUpFragment"
+        android:name="com.example.rickandmortyapplication.fragment.SignUpFragment"
         android:label="Sign Up">
         <action
             android:id="@+id/action_signUpFragment_to_signInFragment"
@@ -64,16 +64,24 @@
 
     <fragment
         android:id="@+id/homeFragment"
-        android:name="com.example.rickandmortyapplication.HomeFragment"
+        android:name="com.example.rickandmortyapplication.fragment.HomeFragment"
         android:label="Home">
         <action
             android:id="@+id/action_homeFragment_to_onboardFragment"
             app:destination="@id/onboardFragment"
             app:popUpTo="@id/onboardFragment"
             app:popUpToInclusive="true" />
+        <action
+            android:id="@+id/action_homeFragment_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
         <argument
             android:name="user"
-            app:argType="com.example.rickandmortyapplication.User"
+            app:argType="com.example.rickandmortyapplication.model.User"
             app:nullable="true" />
     </fragment>
+
+    <fragment
+        android:id="@+id/settingsFragment"
+        android:name="com.example.rickandmortyapplication.fragment.SettingsFragment"
+        android:label="Settings" />
 </navigation>
