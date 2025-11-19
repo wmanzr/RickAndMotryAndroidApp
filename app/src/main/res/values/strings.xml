@@ -8,6 +8,19 @@
     <string name="auth_do">Войдите в аккаунт</string>
     <string name="rick_and_morty">Rick &amp; Morty</string>
     <string name="out">Выйти</string>
+    <string name="email">Электронная почта</string>
+    <string name="settings">Настройки</string>
     <string name="next">Загрузить еще</string>
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="auto_load">Автозагрузка страниц</string>
+    <string name="display_mode_list">Список</string>
+    <string name="display_mode_grid">Сетка</string>
+    <string name="backup_file_name">Имя файла резервной копии</string>
+    <string name="backup">Резервное копирование</string>
+    <string name="create_backup">Создать резервную копию</string>
+    <string name="delete_backup">Удалить резервную копию</string>
+    <string name="restore_backup">Восстановить данные</string>
+    <string name="save_settings">Сохранить настройки</string>
+    <string name="no_backup_info">Резервный файл отсутствует</string>
+    <string name="mode">Режим отображения</string>
 </resources>
