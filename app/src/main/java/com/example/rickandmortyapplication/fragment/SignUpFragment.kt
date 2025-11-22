@@ -6,21 +6,25 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.findNavController
-import com.example.rickandmortyapplication.data.SQLiteDB
 import com.example.rickandmortyapplication.model.User
+import com.example.rickandmortyapplication.data.UserRepository
 import com.example.rickandmortyapplication.databinding.FragmentSignUpBinding
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
 
 class SignUpFragment : Fragment() {
     private var _binding: FragmentSignUpBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("Non-zero value was expected")
+    private lateinit var userRepository: UserRepository
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         _binding = FragmentSignUpBinding.inflate(inflater, container, false)
+        userRepository = UserRepository(requireContext())
         return binding.root
     }
 
@@ -50,19 +54,30 @@ class SignUpFragment : Fragment() {
                 !pass.matches(Regex(".*[@#\$%^&+=!].*")) -> binding.userPass.error = "Пароль должен содержать хотя бы один спецсимвол (@#\$%^&+=!)"
 
                 else -> {
-                    val user = User(login, email, number, pass)
-                    val db = SQLiteDB(requireContext(), null)
-                    db.addUSer(user)
+                    lifecycleScope.launch {
+                        try {
+                            val existingUser = userRepository.getUserByLogin(login)
+                            if (existingUser != null) {
+                                binding.userLogin.error = "Логин уже занят"
+                                return@launch
+                            }
 
-                    Snackbar.make(view, "Вы зарегистрированы", Snackbar.LENGTH_LONG).show()
+                            val user = User(login, email, number, pass)
+                            userRepository.addUser(user)
 
-                    binding.userLogin.text.clear()
-                    binding.userEmail.text.clear()
-                    binding.userNumber.text.clear()
-                    binding.userPass.text.clear()
+                            Snackbar.make(view, "Вы зарегистрированы", Snackbar.LENGTH_LONG).show()
 
-                    val action = SignUpFragmentDirections.actionSignUpFragmentToSignInFragment(user)
-                    view.findNavController().navigate(action)
+                            binding.userLogin.text.clear()
+                            binding.userEmail.text.clear()
+                            binding.userNumber.text.clear()
+                            binding.userPass.text.clear()
+
+                            val action = SignUpFragmentDirections.actionSignUpFragmentToSignInFragment(user)
+                            view.findNavController().navigate(action)
+                        } catch (e: Exception) {
+                            Snackbar.make(view, "Ошибка регистрации: ${e.message}", Snackbar.LENGTH_LONG).show()
+                        }
+                    }
                 }
             }
         }
