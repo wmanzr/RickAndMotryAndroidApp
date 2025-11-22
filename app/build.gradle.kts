@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     kotlin("plugin.serialization") version "2.0.21"
     id("androidx.navigation.safeargs.kotlin")
+    id("com.google.devtools.ksp") version "2.0.21-1.0.28"
 }
 
 android {
@@ -42,6 +43,7 @@ android {
 
 dependencies {
     val nav_version = "2.9.5"
+    val room_version = "2.6.1"
 
     implementation("com.squareup.retrofit2:retrofit:2.11.0")
     implementation("com.jakewharton.retrofit:retrofit2-kotlinx-serialization-converter:1.0.0")
@@ -68,4 +70,8 @@ dependencies {
     annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
 
     implementation("androidx.datastore:datastore-preferences:1.0.0")
+
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
+    ksp("androidx.room:room-compiler:$room_version")
 }

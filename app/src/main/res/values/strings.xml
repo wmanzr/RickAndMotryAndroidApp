@@ -23,4 +23,5 @@
     <string name="save_settings">Сохранить настройки</string>
     <string name="no_backup_info">Резервный файл отсутствует</string>
     <string name="mode">Режим отображения</string>
+    <string name="refresh">Обновить</string>
 </resources>
