@@ -41,27 +41,44 @@
         android:clipToPadding="false"
         tools:listitem="@layout/item_character"
         app:layout_constraintTop_toBottomOf="@id/header"
-        app:layout_constraintBottom_toTopOf="@id/nextPageButton"
+        app:layout_constraintBottom_toTopOf="@id/bottomButtonsContainer"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"/>
 
-    <TextView
-        android:id="@+id/nextPageButton"
+    <LinearLayout
+        android:id="@+id/bottomButtonsContainer"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="@string/next"
-        android:textColor="#ffffff"
-        android:textSize="16sp"
-        android:textStyle="bold"
+        android:orientation="horizontal"
         android:gravity="center"
-        android:padding="12dp"
-        android:background="?attr/selectableItemBackground"
+        android:padding="16dp"
         android:layout_marginBottom="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"/>
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <Button
+            android:id="@+id/refreshButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="8dp"
+            android:layout_weight="1"
+            android:text="@string/refresh"
+            android:textColor="#ffffff"
+            android:textStyle="bold"
+            android:backgroundTint="#388e3c"/>
+
+        <Button
+            android:id="@+id/nextPageButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:text="@string/next"
+            android:textColor="#ffffff"
+            android:textStyle="bold"
+            android:backgroundTint="#388e3c"/>
+    </LinearLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"

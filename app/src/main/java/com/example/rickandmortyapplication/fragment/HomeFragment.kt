@@ -20,10 +20,14 @@ import com.example.rickandmortyapplication.data.RickAndMortyRepository
 import com.example.rickandmortyapplication.databinding.FragmentHomeBinding
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+
+import android.content.Context
+import retrofit2.Response
+
 class HomeFragment : Fragment() {
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding ?: throw RuntimeException("Non-zero value was expected")
-    private val repository = RickAndMortyRepository()
+    private lateinit var repository: RickAndMortyRepository
     private var page = 1
     private var autoLoadEnabled = false
     private var displayMode = "list"
@@ -37,18 +41,26 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        repository = RickAndMortyRepository(requireContext())
         return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         lifecycleScope.launch {
             loadSettingsAndApply()
+            coldStart()
+            observeDatabase()
         }
 
         binding.nextPageButton.setOnClickListener {
             page++
-            loadCharacters(page)
+            loadCharactersFromApi(page, append = true)
+        }
+
+        binding.refreshButton.setOnClickListener {
+                refreshCharacters()
         }
 
         binding.buttonSettings.setOnClickListener {
@@ -74,60 +86,108 @@ class HomeFragment : Fragment() {
         binding.recyclerView.adapter = adapter
 
         binding.nextPageButton.visibility = if (autoLoadEnabled) View.GONE else View.VISIBLE
-        if (autoLoadEnabled) {
-            binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
 
-                    val layoutManager = recyclerView.layoutManager
-                    val lastVisiblePosition = when (layoutManager) {
-                        is LinearLayoutManager -> layoutManager.findLastVisibleItemPosition()
-                        is GridLayoutManager -> layoutManager.findLastVisibleItemPosition()
-                        else -> return
-                    }
-
-                    if (lastVisiblePosition >= characters.size - 3 && binding.progressBar.visibility != View.VISIBLE) {
-                        page++
-                        loadCharacters(page)
-                    }
-                }
-            })
-        }
-        loadCharacters(page)
+        if (autoLoadEnabled) enableAutoPaging()
     }
 
-    private fun loadCharacters(page: Int) {
+    private fun enableAutoPaging() {
+        binding.recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+            override fun onScrolled(rv: RecyclerView, dx: Int, dy: Int) {
+                super.onScrolled(rv, dx, dy)
+
+                val lm = rv.layoutManager
+                val lastVisible = when (lm) {
+                    is LinearLayoutManager -> lm.findLastVisibleItemPosition()
+                    is GridLayoutManager -> lm.findLastVisibleItemPosition()
+                    else -> return
+                }
+
+                if (lastVisible >= characters.size - 3 &&
+                    binding.progressBar.visibility != View.VISIBLE
+                ) {
+                    page++
+                    loadCharactersFromApi(page, append = true)
+                }
+            }
+        })
+    }
+
+    private fun coldStart() {
         lifecycleScope.launch {
             try {
                 binding.progressBar.visibility = View.VISIBLE
-                if (!autoLoadEnabled) {
+
+                val count = repository.getCharactersCount()
+//                repository.deleteAllCharactersFromDb()
+                if (count == 0) {
+                    Toast.makeText(requireContext(), "Данные загружаются с сервера", Toast.LENGTH_SHORT).show()
+                    loadCharactersFromApi(page, append = false)
+                } else {
+                    Toast.makeText(requireContext(), "Данные загружаются из базы данных", Toast.LENGTH_SHORT).show()
+                    val dbCharacters = repository.getAllCharactersFromDb()
+                    characters.clear()
+                    characters.addAll(dbCharacters)
+                    adapter.notifyDataSetChanged()
+
+                    page = (count + 19) / 20
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Ошибка: ${e.message}", Toast.LENGTH_SHORT).show()
+            } finally {
+                binding.progressBar.visibility = View.GONE
+                binding.recyclerView.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    private fun refreshCharacters() {
+        lifecycleScope.launch {
+            try {
+                binding.progressBar.visibility = View.VISIBLE
+                Toast.makeText(requireContext(), "Обновление...", Toast.LENGTH_SHORT).show()
+
+                repository.deleteAllCharactersFromDb()
+                characters.clear()
+                for (i in 1..page) {
+                    val response = repository.getCharacters(i)
+
+                    response.handleResponse(requireContext()) { characterResponse ->
+                        val newCharacters = characterResponse.results
+                        repository.insertCharactersToDb(newCharacters)
+
+                        characters.addAll(newCharacters)
+                        adapter.notifyDataSetChanged()
+                    }
+                    Toast.makeText(requireContext(), "Обновлено!", Toast.LENGTH_SHORT).show()
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Ошибка обновления: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
+            } finally {
+                binding.progressBar.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun loadCharactersFromApi(page: Int, append: Boolean) {
+        lifecycleScope.launch {
+            try {
+                binding.progressBar.visibility = View.VISIBLE
+                if (!autoLoadEnabled && !append) {
                     binding.recyclerView.visibility = View.GONE
                 }
-
                 val response = repository.getCharacters(page)
 
-                when {
-                    response.isSuccessful -> {
-                        val body = response.body()
-                        if (body != null) {
-                            characters.addAll(body.results)
-                            binding.recyclerView.adapter?.notifyDataSetChanged()
-                        } else {
-                            Toast.makeText(requireContext(), "Пустой ответ от сервера", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                response.handleResponse(requireContext()) { characterResponse ->
+                    val newCharacters = characterResponse.results
+                    repository.insertCharactersToDb(newCharacters)
 
-                    response.code() == 404 -> {
-                        Toast.makeText(requireContext(), "Страница не найдена", Toast.LENGTH_SHORT).show()
+                    if (append) {
+                        characters.addAll(newCharacters)
+                    } else {
+                        characters.clear()
+                        characters.addAll(newCharacters)
                     }
-
-                    response.code() == 500 -> {
-                        Toast.makeText(requireContext(), "Ошибка сервера", Toast.LENGTH_SHORT).show()
-                    }
-
-                    else -> {
-                        Toast.makeText(requireContext(), "Неизвестная ошибка: ${response.code()}", Toast.LENGTH_SHORT).show()
-                    }
+                    adapter.notifyDataSetChanged()
                 }
             } catch (e: Exception) {
                 Toast.makeText(requireContext(), "Ошибка загрузки: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
@@ -135,6 +195,51 @@ class HomeFragment : Fragment() {
             } finally {
                 binding.progressBar.visibility = View.GONE
                 binding.recyclerView.visibility = View.VISIBLE
+            }
+        }
+    }
+
+    private fun observeDatabase() {
+        lifecycleScope.launch {
+            repository.getAllCharactersFlow()?.collect { dbCharacters ->
+                if (dbCharacters != characters) {
+                    characters.clear()
+                    characters.addAll(dbCharacters)
+                    adapter.notifyDataSetChanged()
+                }
+            }
+        }
+    }
+
+    suspend fun <T> Response<T>.handleResponse(
+        context: Context,
+        onSuccess: suspend (T) -> Unit
+    ): Boolean {
+        return when {
+            this.isSuccessful -> {
+                val body = this.body()
+                if (body != null) {
+                    onSuccess(body)
+                    true
+                } else {
+                    Toast.makeText(context, "Пустой ответ от сервера", Toast.LENGTH_SHORT).show()
+                    false
+                }
+            }
+
+            this.code() == 404 -> {
+                Toast.makeText(context, "Страница не найдена", Toast.LENGTH_SHORT).show()
+                false
+            }
+
+            this.code() == 500 -> {
+                Toast.makeText(context, "Ошибка сервера", Toast.LENGTH_SHORT).show()
+                false
+            }
+
+            else -> {
+                Toast.makeText(context, "Неизвестная ошибка: ${this.code()}", Toast.LENGTH_SHORT).show()
+                false
             }
         }
     }
